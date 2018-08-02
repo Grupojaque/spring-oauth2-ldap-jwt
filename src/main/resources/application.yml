@@ -1,7 +1,7 @@
 server:
   port: 9999
   context-path: /uaa
-    
+
 myapp:
   client:
     name: myapp
@@ -14,8 +14,10 @@ myapp:
     name: myappkey
     pass: myapp@uthk3y
   ldap:
-    url: "ldap://127.0.0.1:33389/dc=springframework,dc=org"
+    url: "ldap://127.0.0.1:389"
     ldif: "classpath:test.ldif"
+    manager-dn-patterns: "CN=multiplicaadmin,CN=Users,DC=dev,DC=multiplica,DC=com"
+    manager-password:
     user-search-base:
     user-dn-patterns: "uid={0}, ou=people"
     group-search-base: "ou=groups"

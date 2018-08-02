@@ -11,22 +11,28 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 
 @Configuration
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
-	
+
 	@Value("${myapp.ldap.url}")
     private String ldapUrl;
-	
+
 	@Value("${myapp.ldap.ldif}")
     private String ldapLdif;
-	
+
 	@Value("${myapp.ldap.user-dn-patterns}")
-    private String ldapUserDnPatterns;
-	
+	  private String ldapUserDnPatterns;
+
+	@Value("${myapp.ldap.manager-dn-patterns}")
+    private String ldapManagerDnPatterns;
+
+	@Value("${myapp.ldap.manager-password}")
+	   private String ldapManagerPassword;
+
 	@Value("${myapp.ldap.user-search-base}")
     private String ldapUserSearchBase;
-	
+
 	@Value("${myapp.ldap.group-search-base}")
     private String ldapGroupSearchBase;
-	
+
 	@Value("${myapp.ldap.group-search-filter}")
     private String ldapGroupSearchFilter;
 
@@ -37,8 +43,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 			.userDnPatterns(ldapUserDnPatterns)
 			.groupSearchBase(ldapGroupSearchBase)
 			.contextSource()
-//			.url(ldapUrl);
-			.ldif(ldapLdif);
+				.url(ldapUrl)
+					.managerDn(ldapManagerDnPatterns)
+					.managerPassword(ldapManagerPassword);
     }
 
     @Bean
@@ -47,12 +54,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             throws Exception {
         return super.authenticationManagerBean();
     }
-    
+
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
             .sessionManagement()
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
     }
-	
+
 }
