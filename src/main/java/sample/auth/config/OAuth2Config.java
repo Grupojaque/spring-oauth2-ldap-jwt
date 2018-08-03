@@ -38,40 +38,43 @@ public class OAuth2Config extends AuthorizationServerConfigurerAdapter {
 
 	@Value("${myapp.client.name:myapp}")
     private String clientName;
-	
+
 	@Value("${myapp.client.secret:myappsecret}")
     private String clientSecret;
-	
+
 	@Value("${myapp.client.scope:myapp}")
     private String clientScope;
-	
+
 	@Value("${myapp.keystore.name:keystore.jks}")
     private String keystore;
-	
+
 	@Value("${myapp.keystore.pass:keystorepass}")
     private String keystorepass;
-	
+
 	@Value("${myapp.key.name:myappkey}")
     private String key;
-	
+
 	@Value("${myapp.key.pass:keypass}")
     private String keypass;
-	
+
 	@Value("${myapp.ldap.url}")
     private String ldapUrl;
-	
+
 	@Value("${myapp.ldap.user-dn-patterns}")
     private String ldapUserDnPatterns;
-	
+
+	@Value("${myapp.ldap.manager-password}")
+		private String ldapManagerPassword;
+
 	@Value("${myapp.ldap.user-search-base}")
     private String ldapUserSearchBase;
-	
+
 	@Value("${myapp.ldap.group-search-base}")
     private String ldapGroupSearchBase;
-	
+
 	@Value("${myapp.ldap.group-search-filter}")
     private String ldapGroupSearchFilter;
-	
+
 	@Autowired
 	@Qualifier("authenticationManagerBean")
 	private AuthenticationManager authenticationManager;
@@ -86,21 +89,21 @@ public class OAuth2Config extends AuthorizationServerConfigurerAdapter {
 			.authorizedGrantTypes("refresh_token", "password")
 			.scopes(clientScope);
 	}
-	
+
 	/*
 	 * JWT token
 	 */
 	@Override
-    public void configure(AuthorizationServerEndpointsConfigurer endpoints) throws Exception {       
+    public void configure(AuthorizationServerEndpointsConfigurer endpoints) throws Exception {
         endpoints.authenticationManager(authenticationManager)
         	//.accessTokenConverter(jwtAccessTokenConverter())
         	.tokenServices(defaultTokenServices())
         	.userDetailsService(ldapUserDetailsManager());
     }
-	
+
 	@Autowired
     private ClientDetailsService clientDetailsService;
-	
+
 	@Bean
     public DefaultTokenServices defaultTokenServices() {
         final DefaultTokenServices defaultTokenServices = new DefaultTokenServices();
@@ -110,14 +113,14 @@ public class OAuth2Config extends AuthorizationServerConfigurerAdapter {
         defaultTokenServices.setSupportRefreshToken(true);
         return defaultTokenServices;
     }
-	
+
 	@Bean
     public TokenEnhancerChain tokenEnhancerChain() {
         final TokenEnhancerChain tokenEnhancerChain = new TokenEnhancerChain();
         tokenEnhancerChain.setTokenEnhancers(Lists.newArrayList(new AmbaTokenEnhancer(), jwtAccessTokenConverter()));
         return tokenEnhancerChain;
     }
-	
+
 	private static class AmbaTokenEnhancer implements TokenEnhancer {
         @Override
         public OAuth2AccessToken enhance(OAuth2AccessToken accessToken, OAuth2Authentication authentication) {
@@ -127,34 +130,37 @@ public class OAuth2Config extends AuthorizationServerConfigurerAdapter {
             return result;
         }
     }
-	
+
 	@Bean
     public JwtTokenStore tokenStore() {
         return new JwtTokenStore(jwtAccessTokenConverter());
     }
-	
+
 	@Bean
     public DefaultSpringSecurityContextSource contextSource() {
-		return new DefaultSpringSecurityContextSource(ldapUrl);
+		DefaultSpringSecurityContextSource contextSource = new DefaultSpringSecurityContextSource(ldapUrl);
+		contextSource.setUserDn(ldapUserDnPatterns);
+		contextSource.setPassword(ldapManagerPassword);
+		return contextSource;
     }
-	
-	@Bean 
+
+	@Bean
 	public FilterBasedLdapUserSearch userSearch() {
 		return new FilterBasedLdapUserSearch(ldapUserSearchBase, "uid={0}", contextSource());
 	}
-	
+
 	@Bean
 	public DefaultLdapAuthoritiesPopulator ldapAuthoritiesPopulator() {
 		DefaultLdapAuthoritiesPopulator authPopulator = new DefaultLdapAuthoritiesPopulator(contextSource(), ldapGroupSearchBase);
 		authPopulator.setGroupSearchFilter(ldapGroupSearchFilter);
 		return authPopulator;
 	}
-	
+
 	@Bean
 	public LdapUserDetailsService ldapUserDetailsManager() {
 		return new LdapUserDetailsService(userSearch(), ldapAuthoritiesPopulator());
 	}
-    
+
     @Bean
 	public JwtAccessTokenConverter jwtAccessTokenConverter() {
 		JwtAccessTokenConverter converter = new JwtAccessTokenConverter();
@@ -170,5 +176,5 @@ public class OAuth2Config extends AuthorizationServerConfigurerAdapter {
 			throws Exception {
 		oauthServer.tokenKeyAccess("permitAll()").checkTokenAccess("isAuthenticated()");
 	}
-	
+
 }
